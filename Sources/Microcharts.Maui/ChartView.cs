@@ -1,3 +1,5 @@
+using System;
+
 namespace Microcharts.Maui
 {
     using Microsoft.Maui.Controls;
@@ -14,6 +16,7 @@ namespace Microcharts.Maui
         {
             this.BackgroundColor = Colors.Transparent;
             this.PaintSurface += OnPaintCanvas;
+            this.EnableTouchEvents = true;
         }
 
         #endregion
@@ -76,5 +79,17 @@ namespace Microcharts.Maui
         }
 
         #endregion
+
+        protected override void OnTouch(SKTouchEventArgs e)
+        {
+            base.OnTouch(e);
+            if (this.chart != null && e.ActionType == SKTouchAction.Pressed)
+            {
+                if(chart is LineChart lineChart)
+                {
+                    lineChart.SelectClosest(e.Location);
+                }
+            }
+        }
     }
 }

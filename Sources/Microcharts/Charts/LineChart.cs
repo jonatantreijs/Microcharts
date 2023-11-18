@@ -26,6 +26,7 @@ namespace Microcharts
         #region Properties
 
         private Dictionary<ChartSerie, List<SKPoint>> pointsPerSerie = new Dictionary<ChartSerie, List<SKPoint>>();
+        private ChartEntry selectedEntry;
 
         /// <summary>
         /// Gets or sets the size of the line.
@@ -51,9 +52,55 @@ namespace Microcharts
         /// <value>The state of the fadeout gradient.</value>
         public bool EnableYFadeOutGradient { get; set; } = false;
 
+        public ChartEntry SelectedEntry
+        {
+            get => selectedEntry;
+            set
+            {
+                if (selectedEntry == value) return;
+
+                selectedEntry = value;
+                OnSelectedEntryChanged();
+                Invalidate();
+            }
+        }
+
+        private void OnSelectedEntryChanged()
+        {
+            SelectedEntryChanged?.Invoke(this, new ChartEntryEvent(SelectedEntry));
+        }
+
+        public EventHandler<ChartEntryEvent> SelectedEntryChanged { get; set; }
+
+        public SKColor SelectedEntryColor { get; set; } = SKColors.White;
+
         #endregion
 
         #region Methods
+
+        private int DistanceBetween(SKPoint a, SKPoint b)
+        {
+            return (int)Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
+        }
+
+        public void SelectClosest(SKPoint point)
+        {
+            if (pointsPerSerie.Count == 0) return;
+
+            var closest = pointsPerSerie.Values
+                .SelectMany(x => x)
+                .OrderBy(x => DistanceBetween(point, x))
+                .FirstOrDefault();
+
+            ChartEntry closestEntry = null;
+            foreach (var pps in pointsPerSerie)
+            {
+                if(pps.Value.Contains(closest))
+                    closestEntry = pps.Key.Entries.ElementAt(pps.Value.IndexOf(closest));
+            }
+            
+            SelectedEntry = closestEntry;
+        }
 
         /// <inheritdoc/>
         protected override float CalculateHeaderHeight(Dictionary<ChartEntry, SKRect> valueLabelSizes)
@@ -68,6 +115,7 @@ namespace Microcharts
         public override void DrawContent(SKCanvas canvas, int width, int height)
         {
             pointsPerSerie.Clear();
+            canvas.Clear();
             foreach (var s in Series)
                 pointsPerSerie.Add(s, new List<SKPoint>());
 
@@ -112,6 +160,11 @@ namespace Microcharts
 
                         var point = pps.Value.ElementAt(i);
                         canvas.DrawPoint(point, pps.Key.Color ?? entry.Color, PointSize, PointMode);
+
+                        if (SelectedEntry != null && entry == SelectedEntry)
+                        {
+                            canvas.DrawPoint(point, SelectedEntryColor, PointSize * 2, PointMode);
+                        }
                     }
                 }
             }
@@ -361,5 +414,15 @@ namespace Microcharts
         }
 
         #endregion
+    }
+
+    public class ChartEntryEvent
+    {
+        public ChartEntry Entry { get; }
+
+        public ChartEntryEvent(ChartEntry entry)
+        {
+            Entry = entry;
+        }
     }
 }
