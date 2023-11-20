@@ -43,6 +43,8 @@ namespace Microcharts
 
         private CancellationTokenSource animationCancellation;
 
+        private ChartEntry selectedEntry;
+
         #endregion
 
         #region Constructors
@@ -275,6 +277,19 @@ namespace Microcharts
                 if (Set(ref internalMaxValue, value))
                 {
                     RaisePropertyChanged(nameof(MaxValue));
+                }
+            }
+        }
+
+        public ChartEntry SelectedEntry
+        {
+            get => selectedEntry;
+            set
+            {
+                if (Set(ref selectedEntry, value))
+                {
+                    RaisePropertyChanged();
+                    Invalidate();
                 }
             }
         }
@@ -623,6 +638,14 @@ namespace Microcharts
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Select the closest entry to the specified point.
+        /// </summary>
+        public virtual void SelectClosest(SKPoint point)
+        {
+            // Implement in derived class
         }
 
         #endregion

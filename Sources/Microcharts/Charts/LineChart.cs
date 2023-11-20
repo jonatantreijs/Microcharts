@@ -26,7 +26,6 @@ namespace Microcharts
         #region Properties
 
         private Dictionary<ChartSerie, List<SKPoint>> pointsPerSerie = new Dictionary<ChartSerie, List<SKPoint>>();
-        private ChartEntry selectedEntry;
 
         /// <summary>
         /// Gets or sets the size of the line.
@@ -52,26 +51,6 @@ namespace Microcharts
         /// <value>The state of the fadeout gradient.</value>
         public bool EnableYFadeOutGradient { get; set; } = false;
 
-        public ChartEntry SelectedEntry
-        {
-            get => selectedEntry;
-            set
-            {
-                if (selectedEntry == value) return;
-
-                selectedEntry = value;
-                OnSelectedEntryChanged();
-                Invalidate();
-            }
-        }
-
-        private void OnSelectedEntryChanged()
-        {
-            SelectedEntryChanged?.Invoke(this, new ChartEntryEvent(SelectedEntry));
-        }
-
-        public EventHandler<ChartEntryEvent> SelectedEntryChanged { get; set; }
-
         public SKColor SelectedEntryColor { get; set; } = SKColors.White;
 
         #endregion
@@ -83,20 +62,25 @@ namespace Microcharts
             return (int)Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
         }
 
-        public void SelectClosest(SKPoint point)
+        public override void SelectClosest(SKPoint point)
         {
             if (pointsPerSerie.Count == 0) return;
 
             var closest = pointsPerSerie.Values
                 .SelectMany(x => x)
-                .OrderBy(x => DistanceBetween(point, x))
+                .Select(x => (Point: x, Distance: DistanceBetween(point, x)))
+                .OrderBy(x => x.Distance)
+                .Take(1)
+                .Select(d => d.Distance < 50 ? (SKPoint?)d.Point : null)
                 .FirstOrDefault();
+
+            if(closest == null) return;
 
             ChartEntry closestEntry = null;
             foreach (var pps in pointsPerSerie)
             {
-                if(pps.Value.Contains(closest))
-                    closestEntry = pps.Key.Entries.ElementAt(pps.Value.IndexOf(closest));
+                if(pps.Value.Contains(closest.Value))
+                    closestEntry = pps.Key.Entries.ElementAt(pps.Value.IndexOf(closest.Value));
             }
             
             SelectedEntry = closestEntry;

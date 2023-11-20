@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace Microcharts.Maui
 {
@@ -25,6 +26,8 @@ namespace Microcharts.Maui
 
         public static readonly BindableProperty ChartProperty = BindableProperty.Create(nameof(Chart), typeof(Chart), typeof(ChartView), null, propertyChanged: OnChartChanged);
 
+        public static readonly BindableProperty SelectedEntryProperty = BindableProperty.Create(nameof(SelectedEntry), typeof(ChartEntry), typeof(ChartView), null, propertyChanged: OnSelectedEntryChanged, defaultBindingMode: BindingMode.TwoWay);
+
         #endregion
 
         #region Fields
@@ -43,9 +46,24 @@ namespace Microcharts.Maui
             set { SetValue(ChartProperty, value); }
         }
 
+        public ChartEntry SelectedEntry
+        {
+            get { return (ChartEntry)GetValue(SelectedEntryProperty); }
+            set { SetValue(SelectedEntryProperty, value); }
+        }
+
         #endregion
 
         #region Methods
+
+        private static void OnSelectedEntryChanged(BindableObject d, object oldValue, object value)
+        {
+            var view = d as ChartView;
+            if(view?.Chart != null)
+            {
+                view.Chart.SelectedEntry = value as ChartEntry;
+            }
+        }
 
         private static void OnChartChanged(BindableObject d, object oldValue, object value)
         {
@@ -55,6 +73,7 @@ namespace Microcharts.Maui
             {
                 view.handler.Dispose();
                 view.handler = null;
+                view.chart.PropertyChanged -= view.ChartOnPropertyChanged;
             }
 
             view.chart = value as Chart;
@@ -63,6 +82,15 @@ namespace Microcharts.Maui
             if (view.chart != null)
             {
                 view.handler = view.chart.ObserveInvalidate(view, (v) => v.InvalidateSurface());
+                view.chart.PropertyChanged += view.ChartOnPropertyChanged;
+            }
+        }
+
+        private void ChartOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Microcharts.Chart.SelectedEntry))
+            {
+                SelectedEntry = chart?.SelectedEntry;
             }
         }
 
@@ -85,10 +113,7 @@ namespace Microcharts.Maui
             base.OnTouch(e);
             if (this.chart != null && e.ActionType == SKTouchAction.Pressed)
             {
-                if(chart is LineChart lineChart)
-                {
-                    lineChart.SelectClosest(e.Location);
-                }
+                chart.SelectClosest(e.Location);
             }
         }
     }
