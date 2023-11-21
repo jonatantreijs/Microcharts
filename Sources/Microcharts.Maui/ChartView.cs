@@ -52,6 +52,8 @@ namespace Microcharts.Maui
             set { SetValue(SelectedEntryProperty, value); }
         }
 
+        protected SKPoint TouchedPoint { get; set; }
+
         #endregion
 
         #region Methods
@@ -77,6 +79,10 @@ namespace Microcharts.Maui
             }
 
             view.chart = value as Chart;
+
+            if(view.chart != null)
+                view.Chart.SelectedEntry = view.SelectedEntry;
+
             view.InvalidateSurface();
 
             if (view.chart != null)
